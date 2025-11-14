@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "ecotag (Vite React base)",
+  "version": "0.1.0",
+  "description": "Base Manifest V3 for a Vite + React Chrome extension",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ecotag"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["activeTab", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
