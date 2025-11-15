@@ -30,27 +30,30 @@ function Ecoscore({ value = 78 }) {
         </defs>
         <g transform={`translate(${cx}, ${cy})`} className="ecoscore-bg">
           <circle r={radius} fill="#fff" stroke="rgba(15,23,42,0.04)" strokeWidth="1" />
-          <g transform="rotate(-135)">
-            <path d={`M ${-radius} 0 A ${radius} ${radius} 0 0 1 ${radius} 0`} fill="none" stroke="rgba(15,23,42,0.06)" strokeWidth={stroke} strokeLinecap="round" />
-            {
-              (() => {
-                const arcLen = Math.PI * radius
-                const shown = animated ? (value / 100) * arcLen : 0
-                return (
-                  <path
-                    d={`M ${-radius} 0 A ${radius} ${radius} 0 0 1 ${radius} 0`}
+          {
+            (() => {
+              // full circumference of the circle
+              const circumference = 2 * Math.PI * radius
+              const shown = animated ? (value / 100) * circumference : 0
+              return (
+                <>
+                  {/* background ring (subtle) */}
+                  <circle r={radius} fill="none" stroke="rgba(15,23,42,0.06)" strokeWidth={stroke} strokeLinecap="round" transform={`rotate(90)`} />
+                  {/* foreground arc: rotate so the stroke starts at bottom-center (90deg) */}
+                  <circle
+                    r={radius}
                     fill="none"
                     stroke="url(#g1)"
                     strokeWidth={stroke}
                     strokeLinecap="round"
-                    strokeDasharray={`${shown} ${arcLen}`}
-                    transform={`rotate(${angle})`}
+                    strokeDasharray={`${shown} ${Math.max(0, circumference - shown)}`}
+                    transform={`rotate(90)`}
                     style={{ transition: 'stroke-dasharray 900ms cubic-bezier(.2,.9,.2,1)' }}
                   />
-                )
-              })()
-            }
-          </g>
+                </>
+              )
+            })()
+          }
         </g>
       </svg>
       <div className="ecoscore-value">
@@ -119,6 +122,7 @@ function DashboardApp({ product = null, detecting = false, onRetry = () => {} })
                     <li><span className="detail-label">SKU</span><strong className="detail-value">{product.sku || '-'}</strong></li>
                     <li><span className="detail-label">Price</span><strong className="detail-value">{priceText || '-'}</strong></li>
                   </ul>
+                  
 
                   <div style={{marginTop:12,display:'flex',gap:8}}>
                     <button className="btn btn-ghost" onClick={() => setShowRaw(s => !s)}>{showRaw ? 'Hide raw' : 'Show raw'}</button>
@@ -131,8 +135,20 @@ function DashboardApp({ product = null, detecting = false, onRetry = () => {} })
                     </pre>
                   )}
 
-                  <div className="dashboard-meta">Updated: just now • Data: estimate</div>
+                  {/* compact UI: hide verbose metadata in popup */}
                 </section>
+
+                {/* Materials section: separate from Product details */}
+                {product.materials && product.materials.length > 0 && (
+                  <section className="details" style={{marginTop:12}}>
+                    <h2>Materials</h2>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+                      {product.materials.map((m, i) => (
+                        <span key={i} className="material-chip">{m}</span>
+                      ))}
+                    </div>
+                  </section>
+                )}
               </main>
             </>
           )}

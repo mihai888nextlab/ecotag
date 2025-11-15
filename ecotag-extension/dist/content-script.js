@@ -8,6 +8,34 @@
     try { return JSON.parse(text) } catch (e) { return null }
   }
 
+  // Attempt to extract structured or heuristic materials from a JSON-LD product node
+  function extractMaterialsFromJSONLD(node){
+    if (!node) return []
+    const mats = []
+    function pushIf(v){ if (!v) return; if (Array.isArray(v)) v.forEach(x=>pushIf(x)); else if (typeof v === 'string') v.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).forEach(s=>mats.push(s)); else if (typeof v === 'object'){
+      // object forms may have name or materialName
+      const name = v.name || v['name'] || v.material || v.materialName
+      if (name) pushIf(name)
+    }}
+
+    // Common JSON-LD material-like properties
+    pushIf(node.material)
+    pushIf(node.materials)
+    pushIf(node.materialComposition)
+    pushIf(node.fabric)
+    pushIf(node.hasMaterial)
+    // some vendors use 'mainEntity' or nested graph nodes; look for simple patterns
+    if (node['@graph'] && Array.isArray(node['@graph'])){
+      for (const n of node['@graph']){
+        pushIf(n.material || n.materials || n.materialComposition || n.fabric)
+      }
+    }
+
+    // normalize/unique and return
+    const normalized = Array.from(new Set(mats.map(m => m.replace(/\s+/g,' ').trim()))).filter(Boolean)
+    return normalized
+  }
+
   function findJSONLDProduct(){
     const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
     for (const s of scripts){
@@ -19,13 +47,18 @@
         if (!it) continue
         const types = (it['@type'] || it['@type'] && '').toString().toLowerCase() || ''
         if (types.includes('product') || (it['@type'] && it['@type'].toString().toLowerCase() === 'product')){
+          // attach any discovered materials to the node for downstream use
+          try{ const mats = extractMaterialsFromJSONLD(it); if (mats && mats.length) it.materials = mats }catch(e){}
           return it
         }
         // Some sites nest product information under graph
         if (it['@graph']){
           const g = Array.isArray(it['@graph']) ? it['@graph'] : [it['@graph']]
           for (const node of g){
-            if (node['@type'] && node['@type'].toString().toLowerCase().includes('product')) return node
+            if (node['@type'] && node['@type'].toString().toLowerCase().includes('product')){
+              try{ const mats = extractMaterialsFromJSONLD(node); if (mats && mats.length) node.materials = mats }catch(e){}
+              return node
+            }
           }
         }
       }
@@ -126,6 +159,18 @@
       price: price || null,
       sku: sku || null,
       brand: brand || null,
+      materials: (function(){
+        // attempt to extract materials from the ProductGroup node or variants
+        const mats = []
+        function p(v){ if (!v) return; if (Array.isArray(v)) v.forEach(x=>p(x)); else if (typeof v === 'string') v.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).forEach(s=>mats.push(s)); else if (typeof v === 'object'){ const name = v.name || v.material || v.materialName; if (name) p(name) }}
+        p(pg.material)
+        p(pg.materials)
+        p(pg.materialComposition)
+        if (pg.hasVariant && Array.isArray(pg.hasVariant)){
+          for (const v of pg.hasVariant) p(v.material || v.materials || v.fabric)
+        }
+        return Array.from(new Set(mats.map(m => m.replace(/\s+/g,' ').trim()))).filter(Boolean)
+      })(),
       url,
       site,
       confidence,
