@@ -1,0 +1,32 @@
+.footer {
+  border-top: 1px solid rgba(0,0,0,0.04);
+  background: linear-gradient(180deg,#ffffff,#fbfbfb);
+}
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 160px 160px;
+  gap: 1.25rem;
+  align-items: start;
+}
+.col h4 { margin: 0 0 0.5rem 0; font-size: 0.95rem }
+.brand { display:flex; align-items:center; gap:0.5rem; text-decoration: none }
+.logo { width: 36px; height: 36px; object-fit: contain; }
+.name { font-weight: 700; color: #0b6b4f; }
+.tagline { color:#666; margin-top:0.5rem; font-size:0.95rem }
+.list { list-style: none; padding: 0; margin: 0 }
+.list li { margin: 0.35rem 0 }
+.link { color:#0b6b4f; text-decoration: none }
+.social { display:flex; gap:0.6rem; margin-top:0.25rem }
+.icon { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:8px; background:#fff; color:#0b6b4f; text-decoration:none }
+.bottom { margin-top:1rem; border-top: 1px solid rgba(0,0,0,0.02); padding-top:0.85rem; display:flex; justify-content:flex-end }
+.copy { color: #666; font-size: 0.9rem; }
+
+@media (max-width:720px) {
+  .grid { grid-template-columns: 1fr }
+  .bottom { justify-content: center }
+}

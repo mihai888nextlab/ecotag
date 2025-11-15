@@ -1,0 +1,189 @@
+.hero {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3rem 1.25rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.content {
+  flex: 1 1 50%;
+}
+
+.title {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.lead {
+  margin: 0 0 1.25rem 0;
+  color: #444;
+  line-height: 1.45;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.stepActive {
+  background: linear-gradient(90deg, #e6fff2, #f0fff9);
+  color: #0b6b4f;
+  box-shadow: 0 1px 0 rgba(11,107,79,0.06);
+}
+
+.stepIndex {
+  width: 1.6rem;
+  height: 1.6rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  font-weight: 600;
+}
+
+.stepText {
+  min-width: 8rem;
+}
+
+.actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.scanButton {
+  background: #0b6b4f;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.scanButton:active { transform: translateY(1px); }
+
+.result {
+  background: #f0fff9;
+  color: #0b6b4f;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.device {
+  width: 320px;
+  flex: 0 0 320px;
+}
+
+.phone {
+  border-radius: 18px;
+  padding: 12px;
+  background: linear-gradient(180deg,#fff,#fafafa);
+  border: 1px solid #e6e6e6;
+  box-shadow: 0 6px 24px rgba(12,12,12,0.06);
+}
+
+.cameraStub {
+  width: 40px;
+  height: 6px;
+  background: #e6e6e6;
+  border-radius: 6px;
+  margin: 0 auto 10px auto;
+}
+
+.screen {
+  width: 280px;
+  height: 420px;
+  background: #fff;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deco {
+  position: absolute;
+  left: -40px;
+  top: -24px;
+  width: 240px;
+  height: 240px;
+  opacity: 0.06;
+  transform: rotate(-6deg);
+  pointer-events: none;
+}
+
+.barcode {
+  width: 76%;
+  height: 40%;
+  background: repeating-linear-gradient(
+    to right,
+    #111 0 6px,
+    #fff 6px 10px
+  );
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.02);
+  border-radius: 2px;
+}
+
+.scanLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(11,107,79,0.0), rgba(11,107,79,0.55), rgba(11,107,79,0.0));
+  top: -10%;
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.scanning {
+  animation: sweep 1.6s linear infinite;
+  opacity: 1;
+}
+
+@keyframes sweep {
+  0% { transform: translateY(-10%); }
+  50% { transform: translateY(60%); }
+  100% { transform: translateY(130%); }
+}
+
+.overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.75);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .hero { flex-direction: column; gap: 1.25rem; padding: 2rem 1rem; }
+  .device { width: 280px; flex: 0 0 auto; }
+  .screen { height: 360px; }
+}
