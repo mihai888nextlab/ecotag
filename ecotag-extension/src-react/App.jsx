@@ -4,6 +4,7 @@ import logoUrl from '../public/logo.png'
 
 export default function App() {
   const [view, setView] = useState('home')
+  const [accepted, setAccepted] = useState(null) // null = unknown, false = not accepted, true = accepted
   const [detectedProduct, setDetectedProduct] = useState(null)
   const [detecting, setDetecting] = useState(false)
   // Increased sizes to avoid internal scrollbars and provide space for inputs.
@@ -40,6 +41,29 @@ export default function App() {
   useEffect(() => {
     // ensure initial popup size is set when component mounts
     setPopupSize(homeSize.width, homeSize.height)
+
+    // Check one-time Terms acceptance. Use chrome.storage.local when available, otherwise fallback to localStorage.
+    try {
+      if (window.chrome && chrome.storage && chrome.storage.local && typeof chrome.storage.local.get === 'function') {
+        chrome.storage.local.get({ acceptedTerms: false }, (res) => {
+          const ok = !!(res && res.acceptedTerms)
+          setAccepted(ok)
+          if (ok) {
+            // Delay slightly to allow popup initial layout before switching to larger dashboard
+            setTimeout(() => setView('dashboard'), 120)
+          }
+        })
+      } else {
+        const ok = !!(window.localStorage && window.localStorage.getItem && window.localStorage.getItem('ecotag.acceptedTerms'))
+        setAccepted(ok)
+        if (ok) {
+          setTimeout(() => setView('dashboard'), 120)
+        }
+      }
+    } catch (e) {
+      // if storage check fails, default to not accepted so user sees T&C
+      setAccepted(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -139,7 +163,7 @@ export default function App() {
   if (view === 'dashboard') {
     return (
       <div className={`popup-root ${view === 'dashboard' ? 'is-dashboard' : ''}`} style={dashboardSize}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
           <div className="brand">
             <div className="logo" aria-hidden="true">
               <img src={logoUrl} alt="ecotag logo" />
@@ -149,7 +173,6 @@ export default function App() {
               <p className="subtitle">Simple. Trustworthy. Minimal.</p>
             </div>
           </div>
-          <button className="btn btn-ghost" onClick={() => setView('home')}>Close</button>
         </div>
           <div style={{ marginTop: 8 }}>
           <DashboardApp product={detectedProduct || null} detecting={detecting} onRetry={requestProductFromActiveTab} />
@@ -159,6 +182,29 @@ export default function App() {
         </footer>
       </div>
     )
+  }
+  // Home / Terms view
+  function acceptTermsAndOpenDashboard(){
+    try{
+      if (window.chrome && chrome.storage && chrome.storage.local && typeof chrome.storage.local.set === 'function'){
+        chrome.storage.local.set({ acceptedTerms: true }, () => {
+          setAccepted(true)
+          // delay to let popup resize smoothly
+          setTimeout(() => setView('dashboard'), 80)
+        })
+      } else if (window.localStorage && window.localStorage.setItem){
+        window.localStorage.setItem('ecotag.acceptedTerms', '1')
+        setAccepted(true)
+        setTimeout(() => setView('dashboard'), 80)
+      } else {
+        // fallback
+        setAccepted(true)
+        setTimeout(() => setView('dashboard'), 80)
+      }
+    }catch(e){
+      setAccepted(true)
+      setTimeout(() => setView('dashboard'), 80)
+    }
   }
 
   return (
@@ -176,12 +222,20 @@ export default function App() {
       </header>
 
       <main className="popup-body">
-        <p className="lead">Start tagging ethically — a tiny, privacy-first extension base.</p>
-
-        <div className="actions">
-          <button className="btn btn-primary" onClick={() => setView('dashboard')}>Open dashboard</button>
-          <button className="btn btn-ghost" onClick={() => window.open('https://example.com', '_blank')}>Learn more</button>
-        </div>
+        {accepted === null ? (
+          <p className="lead">Checking preferences…</p>
+        ) : accepted === true ? (
+          <p className="lead">Opening dashboard…</p>
+        ) : (
+          <>
+            <h2>Terms & Conditions</h2>
+            <p className="lead">Please accept the terms and conditions to use ecotag. We do not send page data to external servers by default.</p>
+            <div style={{marginTop:12}}>
+              <button className="btn btn-primary" onClick={acceptTermsAndOpenDashboard}>Accept & Open dashboard</button>
+              <button className="btn btn-ghost" onClick={() => window.open('https://example.com', '_blank')}>Learn more</button>
+            </div>
+          </>
+        )}
       </main>
 
       <footer className="popup-footer">
