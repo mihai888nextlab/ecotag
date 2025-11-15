@@ -33,6 +33,106 @@
     return null
   }
 
+  // Some official sites publish a ProductGroup JSON-LD (contains hasVariant[]).
+  // Prefer this when available because it includes variant SKUs, prices and images.
+  function findProductGroupJSONLD(){
+    const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+    for (const s of scripts){
+      const json = tryParseJSON(s.innerText.trim())
+      if (!json) continue
+      const items = Array.isArray(json) ? json : [json]
+      for (const it of items){
+        if (!it) continue
+        const t = (it['@type'] || '').toString().toLowerCase()
+        if (t === 'productgroup' || t.includes('productgroup')) return it
+        if (it['@graph']){
+          const g = Array.isArray(it['@graph']) ? it['@graph'] : [it['@graph']]
+          for (const node of g){
+            const nt = (node && node['@type']) ? node['@type'].toString().toLowerCase() : ''
+            if (nt === 'productgroup' || nt.includes('productgroup')) return node
+          }
+        }
+      }
+    }
+    return null
+  }
+
+  function extractFromProductGroup(pg){
+    if (!pg) return null
+    const title = pg.name || pg['name'] || null
+    const description = pg.description || pg['description'] || null
+    let images = []
+    if (pg.image){
+      if (Array.isArray(pg.image)) images = images.concat(pg.image)
+      else if (typeof pg.image === 'string') images.push(pg.image)
+      else if (pg.image.url) images.push(pg.image.url)
+    }
+    if (pg.hasVariant && Array.isArray(pg.hasVariant)){
+      for (const v of pg.hasVariant){
+        if (!v) continue
+        if (v.image){
+          if (Array.isArray(v.image)) images = images.concat(v.image)
+          else if (typeof v.image === 'string') images.push(v.image)
+          else if (v.image.url) images.push(v.image.url)
+        }
+      }
+    }
+    images = images.filter(Boolean)
+
+    // pick first variant offers for price and sku if present
+    let price = null
+    let sku = pg.sku || pg['sku'] || pg.productGroupID || null
+    if (pg.hasVariant && Array.isArray(pg.hasVariant)){
+      for (const v of pg.hasVariant){
+        if (!v) continue
+        // try offers on variant
+        const off = v.offers || (v['offers'] && (Array.isArray(v.offers) ? v.offers[0] : v.offers))
+        if (off){
+          const amt = off.price || (off.priceSpecification && off.priceSpecification.price)
+          const cur = off.priceCurrency || (off.priceSpecification && off.priceSpecification.priceCurrency) || off.priceCurrency
+          if (amt){
+            price = { raw: String(amt), amount: String(amt), currency: cur || null }
+          }
+        }
+        if (!sku && (v.sku || v['sku'])) sku = v.sku || v['sku']
+        if (price && sku) break
+      }
+    }
+
+    // brand
+    let brand = null
+    if (pg.brand){
+      if (typeof pg.brand === 'string') brand = pg.brand
+      else if (pg.brand.name) brand = pg.brand.name
+    }
+
+    const url = pg.url || location.href
+    const site = (new URL(String(url))).hostname
+
+    const confidence = (() => {
+      let score = 0
+      if (title) score += 3
+      if (description) score += 1
+      if (images && images.length) score += 2
+      if (price) score += 2
+      if (sku) score += 1
+      return Math.min(10, score)
+    })()
+
+    return {
+      title: title || null,
+      description: description || null,
+      images: images || [],
+      price: price || null,
+      sku: sku || null,
+      brand: brand || null,
+      url,
+      site,
+      confidence,
+      raw: { jsonld: pg }
+    }
+  }
+
   function getMeta(name){
     const sel = `meta[name="${name}"]`, m = document.querySelector(sel)
     if (m && m.content) return m.content
@@ -279,6 +379,17 @@
   }
 
   function buildProduct(){
+    // Prefer ProductGroup JSON-LD when available (official sites often expose this)
+    const pg = findProductGroupJSONLD()
+    console.log(pg)
+    if (pg){
+      try {
+        const extracted = extractFromProductGroup(pg)
+        
+        if (extracted) return extracted
+      } catch (e){ /* fallthrough to heuristics */ }
+    }
+
     const title = findTitle()
     const description = findDescription()
     const images = findImages()
