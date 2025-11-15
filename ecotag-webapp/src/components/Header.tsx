@@ -1,10 +1,16 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import styles from '../styles/Header.module.css'
+import { useRouter } from 'next/router'
+import { useSession, signOut } from 'next-auth/react'
 
 export default function Header() {
   const [open, setOpen] = useState(false)
   const [dark, setDark] = useState(false)
+  const router = useRouter()
+  const { data: session, status } = useSession()
+
+  const inApp = router.pathname.startsWith('/app')
 
   return (
     <header className={styles.header} role="banner">
@@ -28,17 +34,42 @@ export default function Header() {
         </button>
 
         <nav className={`${styles.nav} ${open ? styles.open : ''}`} aria-label="Main navigation">
-          <Link href="/app/scanner" className={styles.link}>Scanner</Link>
-          <Link href="/app/app" className={styles.link}>Dashboard</Link>
-          <Link href="/app/register" className={styles.cta}>Get started</Link>
-          <button
-            className={styles.themeToggle}
-            onClick={() => setDark(d => !d)}
-            aria-pressed={dark}
-            aria-label="Toggle theme"
-          >
-            {dark ? '🌙' : '☀️'}
-          </button>
+          {inApp ? (
+            // App-specific nav: mimic app/index.tsx navbar and show auth status
+            <>
+              <Link href="/app" className={styles.link}>Dashboard</Link>
+              <Link href="/app/scanner" className={styles.link}>My Scans</Link>
+              <Link href="/app/extension" className={styles.link}>Extension</Link>
+              <Link href="/app/settings" className={styles.link}>Settings</Link>
+
+              {status === 'authenticated' ? (
+                <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                  <span className={styles.link} style={{fontWeight:600}}>Hello, {session?.user?.email ?? session?.user?.name}</span>
+                  <button className={styles.cta} onClick={() => signOut({ callbackUrl: '/' })}>Logout</button>
+                </div>
+              ) : (
+                <div style={{display:'flex', gap:8}}>
+                  <Link href="/app/register" className={styles.cta}>Sign up</Link>
+                  <Link href="/app/login" className={styles.link}>Log in</Link>
+                </div>
+              )}
+            </>
+          ) : (
+            // Public site nav
+            <>
+              <Link href="/app/scanner" className={styles.link}>Scanner</Link>
+              <Link href="/app" className={styles.link}>Dashboard</Link>
+              <Link href="/app/register" className={styles.cta}>Get started</Link>
+              <button
+                className={styles.themeToggle}
+                onClick={() => setDark(d => !d)}
+                aria-pressed={dark}
+                aria-label="Toggle theme"
+              >
+                {dark ? '🌙' : '☀️'}
+              </button>
+            </>
+          )}
         </nav>
       </div>
     </header>

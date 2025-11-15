@@ -7,29 +7,7 @@ export default function App() {
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800">
-            {/* NAVBAR */}
-            <nav className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                <div className="text-2xl font-bold text-green-600">EcoTag</div>
-                <div className="space-x-6 text-gray-700 font-medium flex items-center">
-                    <a href="#" className="hover:text-green-600">Dashboard</a>
-                    <a href="#" className="hover:text-green-600">My Scans</a>
-                    <a href="#" className="hover:text-green-600">Extension</a>
-                    <a href="#" className="hover:text-green-600">Settings</a>
-                    {status == "authenticated" ? (<div>
-                        <span className="mr-4">Hello, {session.user?.email}</span>
-                        <button className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition">
-                            Logout
-                        </button>
-                    </div>) : (<div>
-                        <button className="bg-green-600 text-white px-3 py-2 mr-1 rounded-lg hover:bg-green-700 transition">
-                            Sign up
-                        </button>
-                        <button className="bg-white text-green-600 px-3 py-2 rounded-lg border border-green-600 hover:bg-green-100 transition">
-                            Log in
-                        </button>
-                    </div>)}
-                </div>
-            </nav>
+            {/* Header is provided globally via the shared Header component */}
 
             <main className="max-w-5xl mx-auto py-10 px-4">
 
