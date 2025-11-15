@@ -18,17 +18,17 @@ body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,R
 
 .popup-root{
   box-sizing: border-box;
-  margin: 8px;
+  margin: 0;
   background: linear-gradient(180deg,var(--bg),#ffffff);
   padding: 14px;
-  border-radius: var(--radius);
+  border-radius: calc(var(--radius) + 4px);
   color: var(--text);
   display: block;
   transition: width 200ms ease, height 220ms ease, transform 180ms ease;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   /* subtle, soft shadow for a modern, flat look */
-  box-shadow: 0 8px 20px rgba(7,20,39,0.06);
+  box-shadow: 0 10px 30px rgba(7,20,39,0.06);
 }
 
 .popup-header{padding:8px 6px 12px}
@@ -55,7 +55,8 @@ body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,R
 .btn-ghost:hover{background:rgba(22,163,74,0.04);box-shadow:none}
 .btn-ghost:focus{outline:2px solid rgba(22,163,74,0.06);outline-offset:2px}
 
-.popup-footer{padding:10px 6px 2px;text-align:center;color:var(--muted);font-size:11px}
+/* footer removed — compact popup (rule left commented out in case needed later) */
+/* .popup-footer{padding:10px 6px 2px;text-align:center;color:var(--muted);font-size:11px} */
 
 /* Ensure popup content doesn't affect outside layout; contents should scroll if overflow */
 .popup-root * { box-sizing: border-box }
@@ -68,14 +69,14 @@ html, body { -ms-overflow-style: none }
 /* Make links and buttons slightly larger for accessibility inside the popup */
 .btn{font-size:13px}
 
-.dashboard-root{min-height:520px;display:flex;align-items:flex-start;justify-content:center;padding:18px;background:linear-gradient(180deg,var(--bg),var(--bg));color:var(--text);font-family:inherit}
+.dashboard-root{min-height:420px;display:flex;align-items:flex-start;justify-content:center;padding:12px;background:linear-gradient(180deg,var(--bg),var(--bg));color:var(--text);font-family:inherit}
 .dashboard-header{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8px 0 6px;width:100%;gap:8px}
 .dashboard-container{width:100%;max-width:520px}
-.dashboard-card{background:linear-gradient(180deg,var(--card),#ffffff);border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(7,20,39,0.05);overflow:visible;display:flex;flex-direction:column;align-items:center;transition:box-shadow 200ms ease, transform 200ms ease}
-.dashboard-card:hover{box-shadow:0 10px 28px rgba(7,20,39,0.06)}
+.dashboard-card{background:linear-gradient(180deg,var(--card),#ffffff);border-radius:18px;padding:22px;box-shadow:0 12px 30px rgba(11,18,32,0.06);overflow:visible;display:flex;flex-direction:column;align-items:center;transition:box-shadow 220ms ease, transform 220ms ease}
+.dashboard-card:hover{box-shadow:0 18px 48px rgba(11,18,32,0.08);transform:translateY(-4px)}
 .dashboard-card{position:relative}
-.product-title{font-size:18px;font-weight:700;color:var(--text);text-align:center;margin-top:10px}
-.product-sub{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+.product-title{font-size:18px;font-weight:700;color:var(--text);text-align:center;margin-top:6px}
+.product-sub{font-size:13px;color:var(--muted);text-align:center;margin-top:2px}
 .ecoscore-wrap{position:relative;width:160px;height:160px;margin:6px auto 14px;display:flex;align-items:center;justify-content:center}
 
 .dashboard-logo{width:48px;height:48px;object-fit:contain;margin-bottom:6px}
@@ -91,11 +92,11 @@ html, body { -ms-overflow-style: none }
 .score{font-size:36px;font-weight:800;color:var(--text);line-height:1}
 .score-sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
 
-.dashboard-body{padding:12px 0 0;width:100%}
-.details{background:transparent;border-radius:12px;padding:8px 6px;width:100%}
-.details h2{margin:0 0 16px;font-size:15px;text-align:left}
+.dashboard-body{padding:14px 0 0;width:100%}
+.details{background:transparent;border-radius:12px;padding:10px 8px;width:100%}
+.details h2{margin:0 0 12px;font-size:15px;text-align:left;color:var(--text)}
 .details ul{margin:0;padding:0;color:var(--muted);list-style:none}
-.details li{display:flex;justify-content:space-between;align-items:center;padding:12px 6px;border-bottom:1px solid rgba(7,20,39,0.04)}
+.details li{display:flex;justify-content:space-between;align-items:center;padding:12px 6px;border-bottom:1px solid rgba(7,20,39,0.06)}
 .details li:last-child{border-bottom:0}
 .details li strong{color:var(--text);font-weight:700}
 .detail-label{font-size:14px;color:var(--muted)}
@@ -104,7 +105,8 @@ html, body { -ms-overflow-style: none }
 /* Materials list */
 .materials-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .material-row{display:flex;justify-content:space-between;align-items:center;padding:6px;border-radius:8px;background:linear-gradient(180deg,rgba(245,247,250,0.6),rgba(255,255,255,0.6));box-shadow:0 1px 0 rgba(15,23,42,0.02)}
-.material-chip{font-size:13px;background:transparent;padding:6px 10px;border-radius:999px;color:var(--text);font-weight:600}
+.material-chip{font-size:13px;background:linear-gradient(180deg, #f6fff6, #f0fff2);padding:6px 12px;border-radius:999px;color:var(--text);font-weight:600;border:1px solid rgba(16,185,129,0.12)}
+.material-chip[data-percent]{padding-right:10px}
 .material-percent{font-size:13px;color:var(--muted);min-width:48px;text-align:right}
 .materials-list details summary{font-size:13px}
 
@@ -123,18 +125,23 @@ html, body { -ms-overflow-style: none }
 .assistant-toggle.active{background:rgba(22,163,74,0.08);color:var(--primary)}
 
 /* Assistant view styles: professional, minimal, trustworthy */
-.assistant-root{padding:20px;display:flex;flex-direction:column;gap:14px}
+.assistant-root{padding:14px 12px;display:flex;flex-direction:column;gap:10px}
 .assistant-header{display:flex;flex-direction:column;gap:6px;padding-bottom:6px;border-bottom:1px solid rgba(7,20,39,0.04)}
-.assistant-title{font-weight:700;font-size:16px;color:var(--text)}
-.assistant-sub{font-size:13px;color:var(--muted)}
-.assistant-body{padding-top:8px}
-.assistant-placeholder{background:linear-gradient(180deg,rgba(245,247,250,0.6),rgba(255,255,255,0.6));padding:18px;border-radius:12px;color:var(--muted);font-size:14px}
-.assistant-input-row{display:flex;gap:8px;margin-top:12px}
-.assistant-input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(7,20,39,0.06);background:transparent;color:var(--text);font-size:14px;resize:none}
+.assistant-title{font-weight:700;font-size:15px;color:var(--text)}
+.assistant-sub{font-size:12px;color:var(--muted)}
+.assistant-body{padding-top:6px}
+.assistant-placeholder{background:linear-gradient(180deg,rgba(245,247,250,0.6),rgba(255,255,255,0.6));padding:12px;border-radius:12px;color:var(--muted);font-size:13px}
+.assistant-input-row{display:flex;gap:8px;margin-top:8px}
+.assistant-input{flex:1;padding:8px 10px;border-radius:10px;border:1px solid rgba(7,20,39,0.06);background:transparent;color:var(--text);font-size:13px;resize:none}
 .assistant-input:disabled{opacity:0.6}
 
 /* messages */
-.assistant-messages{max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:6px;padding-bottom:4px}
+.assistant-messages{max-height:320px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-right:6px;padding-bottom:4px}
+
+/* Example quick-questions rendered as chips */
+.assistant-examples{display:flex;flex-wrap:wrap;gap:8px;padding:6px 0}
+.example-chip{background:transparent;border:1px solid rgba(7,20,39,0.06);padding:6px 10px;border-radius:999px;font-size:13px;color:var(--muted);cursor:pointer}
+.example-chip:hover{background:rgba(7,20,39,0.03)}
 .msg{display:flex}
 .msg.user{justify-content:flex-end}
 .msg.assistant{justify-content:flex-start}

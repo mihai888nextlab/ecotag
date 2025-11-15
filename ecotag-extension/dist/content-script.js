@@ -8,6 +8,34 @@
     try { return JSON.parse(text) } catch (e) { return null }
   }
 
+  // Attempt to extract structured or heuristic materials from a JSON-LD product node
+  function extractMaterialsFromJSONLD(node){
+    if (!node) return []
+    const mats = []
+    function pushIf(v){ if (!v) return; if (Array.isArray(v)) v.forEach(x=>pushIf(x)); else if (typeof v === 'string') v.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).forEach(s=>mats.push(s)); else if (typeof v === 'object'){
+      // object forms may have name or materialName
+      const name = v.name || v['name'] || v.material || v.materialName
+      if (name) pushIf(name)
+    }}
+
+    // Common JSON-LD material-like properties
+    pushIf(node.material)
+    pushIf(node.materials)
+    pushIf(node.materialComposition)
+    pushIf(node.fabric)
+    pushIf(node.hasMaterial)
+    // some vendors use 'mainEntity' or nested graph nodes; look for simple patterns
+    if (node['@graph'] && Array.isArray(node['@graph'])){
+      for (const n of node['@graph']){
+        pushIf(n.material || n.materials || n.materialComposition || n.fabric)
+      }
+    }
+
+    // normalize/unique and return
+    const normalized = Array.from(new Set(mats.map(m => m.replace(/\s+/g,' ').trim()))).filter(Boolean)
+    return normalized
+  }
+
   function findJSONLDProduct(){
     const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
     for (const s of scripts){
@@ -19,18 +47,135 @@
         if (!it) continue
         const types = (it['@type'] || it['@type'] && '').toString().toLowerCase() || ''
         if (types.includes('product') || (it['@type'] && it['@type'].toString().toLowerCase() === 'product')){
+          // attach any discovered materials to the node for downstream use
+          try{ const mats = extractMaterialsFromJSONLD(it); if (mats && mats.length) it.materials = mats }catch(e){}
           return it
         }
         // Some sites nest product information under graph
         if (it['@graph']){
           const g = Array.isArray(it['@graph']) ? it['@graph'] : [it['@graph']]
           for (const node of g){
-            if (node['@type'] && node['@type'].toString().toLowerCase().includes('product')) return node
+            if (node['@type'] && node['@type'].toString().toLowerCase().includes('product')){
+              try{ const mats = extractMaterialsFromJSONLD(node); if (mats && mats.length) node.materials = mats }catch(e){}
+              return node
+            }
           }
         }
       }
     }
     return null
+  }
+
+  // Some official sites publish a ProductGroup JSON-LD (contains hasVariant[]).
+  // Prefer this when available because it includes variant SKUs, prices and images.
+  function findProductGroupJSONLD(){
+    const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
+    for (const s of scripts){
+      const json = tryParseJSON(s.innerText.trim())
+      if (!json) continue
+      const items = Array.isArray(json) ? json : [json]
+      for (const it of items){
+        if (!it) continue
+        const t = (it['@type'] || '').toString().toLowerCase()
+        if (t === 'productgroup' || t.includes('productgroup')) return it
+        if (it['@graph']){
+          const g = Array.isArray(it['@graph']) ? it['@graph'] : [it['@graph']]
+          for (const node of g){
+            const nt = (node && node['@type']) ? node['@type'].toString().toLowerCase() : ''
+            if (nt === 'productgroup' || nt.includes('productgroup')) return node
+          }
+        }
+      }
+    }
+    return null
+  }
+
+  function extractFromProductGroup(pg){
+    if (!pg) return null
+    const title = pg.name || pg['name'] || null
+    const description = pg.description || pg['description'] || null
+    let images = []
+    if (pg.image){
+      if (Array.isArray(pg.image)) images = images.concat(pg.image)
+      else if (typeof pg.image === 'string') images.push(pg.image)
+      else if (pg.image.url) images.push(pg.image.url)
+    }
+    if (pg.hasVariant && Array.isArray(pg.hasVariant)){
+      for (const v of pg.hasVariant){
+        if (!v) continue
+        if (v.image){
+          if (Array.isArray(v.image)) images = images.concat(v.image)
+          else if (typeof v.image === 'string') images.push(v.image)
+          else if (v.image.url) images.push(v.image.url)
+        }
+      }
+    }
+    images = images.filter(Boolean)
+
+    // pick first variant offers for price and sku if present
+    let price = null
+    let sku = pg.sku || pg['sku'] || pg.productGroupID || null
+    if (pg.hasVariant && Array.isArray(pg.hasVariant)){
+      for (const v of pg.hasVariant){
+        if (!v) continue
+        // try offers on variant
+        const off = v.offers || (v['offers'] && (Array.isArray(v.offers) ? v.offers[0] : v.offers))
+        if (off){
+          const amt = off.price || (off.priceSpecification && off.priceSpecification.price)
+          const cur = off.priceCurrency || (off.priceSpecification && off.priceSpecification.priceCurrency) || off.priceCurrency
+          if (amt){
+            price = { raw: String(amt), amount: String(amt), currency: cur || null }
+          }
+        }
+        if (!sku && (v.sku || v['sku'])) sku = v.sku || v['sku']
+        if (price && sku) break
+      }
+    }
+
+    // brand
+    let brand = null
+    if (pg.brand){
+      if (typeof pg.brand === 'string') brand = pg.brand
+      else if (pg.brand.name) brand = pg.brand.name
+    }
+
+    const url = pg.url || location.href
+    const site = (new URL(String(url))).hostname
+
+    const confidence = (() => {
+      let score = 0
+      if (title) score += 3
+      if (description) score += 1
+      if (images && images.length) score += 2
+      if (price) score += 2
+      if (sku) score += 1
+      return Math.min(10, score)
+    })()
+
+    return {
+      title: title || null,
+      description: description || null,
+      images: images || [],
+      price: price || null,
+      sku: sku || null,
+      brand: brand || null,
+      materials: (function(){
+        // attempt to extract materials from the ProductGroup node or variants
+        const mats = []
+        function p(v){ if (!v) return; if (Array.isArray(v)) v.forEach(x=>p(x)); else if (typeof v === 'string') v.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean).forEach(s=>mats.push(s)); else if (typeof v === 'object'){ const name = v.name || v.material || v.materialName; if (name) p(name) }}
+        p(pg.material)
+        p(pg.materials)
+        p(pg.materialComposition)
+        if (pg.hasVariant && Array.isArray(pg.hasVariant)){
+          for (const v of pg.hasVariant) p(v.material || v.materials || v.fabric)
+        }
+        return Array.from(new Set(mats.map(m => m.replace(/\s+/g,' ').trim()))).filter(Boolean)
+      })(),
+      url,
+      site,
+      confidence,
+      raw: { jsonld: pg }
+    }
   }
 
   function getMeta(name){
@@ -279,6 +424,17 @@
   }
 
   function buildProduct(){
+    // Prefer ProductGroup JSON-LD when available (official sites often expose this)
+    const pg = findProductGroupJSONLD()
+    console.log(pg)
+    if (pg){
+      try {
+        const extracted = extractFromProductGroup(pg)
+        
+        if (extracted) return extracted
+      } catch (e){ /* fallthrough to heuristics */ }
+    }
+
     const title = findTitle()
     const description = findDescription()
     const images = findImages()

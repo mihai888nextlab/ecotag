@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from 'next/link'
+import { SAMPLE_SCANS } from '../../data/sampleScans'
 
 export default function App() {
     const { data: session, status } = useSession();
@@ -7,29 +9,7 @@ export default function App() {
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800">
-            {/* NAVBAR */}
-            <nav className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-                <div className="text-2xl font-bold text-green-600">EcoTag</div>
-                <div className="space-x-6 text-gray-700 font-medium flex items-center">
-                    <a href="#" className="hover:text-green-600">Dashboard</a>
-                    <a href="#" className="hover:text-green-600">My Scans</a>
-                    <a href="#" className="hover:text-green-600">Extension</a>
-                    <a href="#" className="hover:text-green-600">Settings</a>
-                    {status == "authenticated" ? (<div>
-                        <span className="mr-4">Hello, {session.user?.email}</span>
-                        <button className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition">
-                            Logout
-                        </button>
-                    </div>) : (<div>
-                        <button className="bg-green-600 text-white px-3 py-2 mr-1 rounded-lg hover:bg-green-700 transition">
-                            Sign up
-                        </button>
-                        <button className="bg-white text-green-600 px-3 py-2 rounded-lg border border-green-600 hover:bg-green-100 transition">
-                            Log in
-                        </button>
-                    </div>)}
-                </div>
-            </nav>
+            {/* Header is provided globally via the shared Header component */}
 
             <main className="max-w-5xl mx-auto py-10 px-4">
 
@@ -53,9 +33,9 @@ export default function App() {
                             Use your camera or manually enter an EAN barcode to get the EcoScore.
                         </p>
 
-                        <button className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                        <Link href="/app/scanner" className="w-full inline-block text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
                             Start Barcode Scanner
-                        </button>
+                        </Link>
 
                         <button className="w-full mt-3 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition">
                             Enter EAN Manually
@@ -90,25 +70,17 @@ export default function App() {
                         <h2 className="text-xl font-semibold mb-4">Latest Scans</h2>
 
                         <div className="space-y-3">
-                            <div className="flex justify-between bg-gray-100 p-3 rounded-lg">
-                                <span>H&M Hoodie</span>
-                                <span className="font-semibold text-green-600">42 / 100</span>
-                            </div>
-
-                            <div className="flex justify-between bg-gray-100 p-3 rounded-lg">
-                                <span>Zara Denim Jacket</span>
-                                <span className="font-semibold text-green-600">55 / 100</span>
-                            </div>
-
-                            <div className="flex justify-between bg-gray-100 p-3 rounded-lg">
-                                <span>Uniqlo T-Shirt</span>
-                                <span className="font-semibold text-green-600">78 / 100</span>
-                            </div>
+                            {SAMPLE_SCANS.map((s, i) => (
+                                <div key={i} className="flex justify-between bg-gray-100 p-3 rounded-lg">
+                                    <span>{s.title}</span>
+                                    <span className="font-semibold text-green-600">{s.score} / 100</span>
+                                </div>
+                            ))}
                         </div>
 
-                        <button className="mt-4 text-green-600 hover:text-green-800 font-medium">
+                        <Link href="/app/history" className="mt-4 inline-block text-green-600 hover:text-green-800 font-medium">
                             View All →
-                        </button>
+                        </Link>
                     </div>
 
                     {/* EXTENSION STATUS */}

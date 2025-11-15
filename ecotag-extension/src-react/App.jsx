@@ -11,7 +11,8 @@ export default function App() {
   const [showAssistant, setShowAssistant] = useState(false)
   // Increased sizes to avoid internal scrollbars and provide space for inputs.
   const homeSize = { width: 420, height: 340, overflow: 'hidden' }
-  const dashboardSize = { width: 520, height: 760, overflow: 'hidden' }
+  // Reduced dashboard height so the popup fits without large empty space
+  const dashboardSize = { width: 520, height: 640, overflow: 'hidden' }
 
   // Resize helper: Chrome popup can grow but sometimes doesn't shrink automatically.
   // To force a shrink when switching to a smaller view, briefly set the document
@@ -195,9 +196,7 @@ export default function App() {
             <DashboardApp product={detectedProduct || null} detecting={detecting} onRetry={requestProductFromActiveTab} />
           )}
         </div>
-        <footer className="popup-footer">
-          <small>v0.1 — local build</small>
-        </footer>
+        {/* footer removed to keep popup compact */}
       </div>
     )
   }
@@ -256,9 +255,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="popup-footer">
-        <small>v0.1 — local build</small>
-      </footer>
+      {/* footer removed to keep popup compact */}
     </div>
   )
 }
