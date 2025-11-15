@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import DashboardApp from './Dashboard'
+import Assistant from './Assistant'
 import logoUrl from '../public/logo.png'
 
 export default function App() {
@@ -7,6 +8,7 @@ export default function App() {
   const [accepted, setAccepted] = useState(null) // null = unknown, false = not accepted, true = accepted
   const [detectedProduct, setDetectedProduct] = useState(null)
   const [detecting, setDetecting] = useState(false)
+  const [showAssistant, setShowAssistant] = useState(false)
   // Increased sizes to avoid internal scrollbars and provide space for inputs.
   const homeSize = { width: 420, height: 340, overflow: 'hidden' }
   const dashboardSize = { width: 520, height: 760, overflow: 'hidden' }
@@ -163,7 +165,7 @@ export default function App() {
   if (view === 'dashboard') {
     return (
       <div className={`popup-root ${view === 'dashboard' ? 'is-dashboard' : ''}`} style={dashboardSize}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <div className="brand">
             <div className="logo" aria-hidden="true">
               <img src={logoUrl} alt="ecotag logo" />
@@ -173,9 +175,25 @@ export default function App() {
               <p className="subtitle">Simple. Trustworthy. Minimal.</p>
             </div>
           </div>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <button
+              className={"assistant-global-toggle" + (showAssistant ? ' active' : '')}
+              onClick={() => setShowAssistant(s => !s)}
+              title={showAssistant ? 'Return to dashboard' : 'Open assistant'}
+              aria-pressed={showAssistant}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
           <div style={{ marginTop: 8 }}>
-          <DashboardApp product={detectedProduct || null} detecting={detecting} onRetry={requestProductFromActiveTab} />
+          {showAssistant ? (
+            <Assistant />
+          ) : (
+            <DashboardApp product={detectedProduct || null} detecting={detecting} onRetry={requestProductFromActiveTab} />
+          )}
         </div>
         <footer className="popup-footer">
           <small>v0.1 — local build</small>
