@@ -91,34 +91,177 @@
   }
 
   function findPrice(){
+    // Helper: parse a textual price candidate into { amount, currency, raw }
+    function parsePriceText(txt){
+      if (!txt || typeof txt !== 'string') return null
+      const raw = txt.trim().replace(/\s+/g,' ')
+      // look for currency symbol or code + number patterns
+      // currency symbols (common set)
+      const sym = '[€$£¥₹₩฿]'
+  const code = '\\b(?:USD|EUR|GBP|JPY|CNY|AUD|CAD|CHF|DKK|NOK|SEK|INR|RON)\\b'
+      const patterns = [
+        // symbol before number: $12,345.67 or €12,34
+        new RegExp(sym + '\\s*([0-9.,\\s]+)'),
+        // number before symbol: 12,345.67 $ or 12,34 €
+        new RegExp('([0-9.,\\s]+)\\s*' + sym),
+        // code before number: USD 12.34
+        new RegExp(code + '\\s*([0-9.,\\s]+)', 'i'),
+        // number before code: 12.34 USD
+        new RegExp('([0-9.,\\s]+)\\s*' + code, 'i')
+      ]
+
+      for (const p of patterns){
+        const m = raw.match(p)
+        if (m){
+          // find currency symbol or code
+          const currencyMatch = raw.match(new RegExp(sym))
+          const codeMatch = raw.match(new RegExp(code, 'i'))
+          let currency = null
+          if (currencyMatch) currency = currencyMatch[0]
+          else if (codeMatch) currency = codeMatch[0].toUpperCase()
+
+          let num = m[1]
+          // normalize number: remove spaces, handle comma decimal
+          num = num.replace(/\s+/g,'')
+          if (num.indexOf(',') !== -1 && num.indexOf('.') === -1){
+            // likely decimal comma: 12,50 => 12.50
+            num = num.replace(',', '.')
+          } else {
+            // remove thousand separators (commas or spaces)
+            num = num.replace(/[,\s](?=\d{3})/g, '')
+          }
+          // final cleanup: keep digits and dot
+          const norm = (num.match(/[0-9]+(?:\.[0-9]+)?/ ) || [null])[0]
+          if (norm) return { raw, amount: norm, currency }
+        }
+      }
+      return null
+    }
+
+    // 1) Try JSON-LD offers first (most reliable)
     const json = findJSONLDProduct()
     if (json && json.offers){
-      const offers = Array.isArray(json.offers) ? json.offers[0] : json.offers
-      if (offers){
-        return { raw: offers.price || offers.priceSpecification || offers.priceCurrency ? `${offers.price || ''}` : null, amount: offers.price || null, currency: offers.priceCurrency || offers.priceCurrency || null }
+      const offers = Array.isArray(json.offers) ? json.offers : [json.offers]
+      for (const off of offers){
+        if (!off) continue
+        // typical shapes: { price, priceCurrency } or PriceSpecification
+        let raw = null
+        let amount = null
+        let currency = null
+        if (off.price) { raw = String(off.price); amount = String(off.price) }
+        if (off.priceCurrency) currency = String(off.priceCurrency)
+        if (!amount && off.priceSpecification){
+          const ps = off.priceSpecification
+          if (ps.price) { amount = String(ps.price); raw = raw || String(ps.price) }
+          if (ps.priceCurrency) currency = currency || String(ps.priceCurrency)
+        }
+        if (amount) return { raw: raw || amount, amount, currency }
       }
     }
-    // meta tags
-    const priceMeta = getMeta('product:price:amount') || getMeta('og:price:amount')
-    if (priceMeta) return { raw: priceMeta, amount: priceMeta }
-    // DOM heuristics: look for elements with class or id containing 'price'
-    const priceEl = document.querySelector("[itemprop='price'], .price, .product-price, [class*='price']")
-    if (priceEl && priceEl.textContent){
-      const txt = priceEl.textContent.trim()
-      const m = txt.match(/([€$£¥₹]\s?\d[\d,\.\s]*)/)
-      return { raw: txt, amount: (m && m[0]) || txt }
+
+    // If JSON-LD is a ProductGroup with variants, inspect hasVariant entries
+    if (json && json.hasVariant && Array.isArray(json.hasVariant)){
+      for (const variant of json.hasVariant){
+        if (!variant) continue
+        const off = variant.offers || (variant['offers'] && (Array.isArray(variant.offers) ? variant.offers[0] : variant.offers))
+        if (off){
+          let raw = null
+          let amount = null
+          let currency = null
+          if (off.price) { raw = String(off.price); amount = String(off.price) }
+          if (off.priceCurrency) currency = String(off.priceCurrency)
+          if (!amount && off.priceSpecification){
+            const ps = off.priceSpecification
+            if (ps.price) { amount = String(ps.price); raw = raw || String(ps.price) }
+            if (ps.priceCurrency) currency = currency || String(ps.priceCurrency)
+          }
+          if (amount) return { raw: raw || amount, amount, currency }
+        }
+      }
     }
-    // last resort: search for currency-like strings in page
-    const bodyText = document.body ? document.body.innerText : ''
-    const re = /([€$£¥₹]\s?\d[\d,\.\s]*)/g
-    const match = re.exec(bodyText)
-    if (match) return { raw: match[0], amount: match[0] }
+
+    // 2) Meta tags (og, product meta)
+    const metaCandidates = [
+      getMeta('product:price:amount'),
+      getMeta('og:price:amount'),
+      getMeta('price'),
+      getMeta('product:price'),
+      getMeta('twitter:data1')
+    ].filter(Boolean)
+    for (const m of metaCandidates){
+      const p = parsePriceText(m)
+      if (p) return { raw: m, amount: p.amount, currency: p.currency }
+    }
+
+    // 3) Data attributes / structured DOM attributes near price
+    // search for elements that explicitly carry price information
+    const attrSelectors = [
+      '[itemprop="price"]',
+      '[data-price]',
+      '[data-price-amount]',
+      '[data-priceamount]',
+      '[data-product-price]'
+    ]
+    for (const sel of attrSelectors){
+      const el = document.querySelector(sel)
+      if (el){
+        const candidates = []
+        if (el.dataset && el.dataset.price) candidates.push(el.dataset.price)
+        if (el.dataset && el.dataset.priceAmount) candidates.push(el.dataset.priceAmount)
+        if (el.getAttribute('content')) candidates.push(el.getAttribute('content'))
+        if (el.textContent) candidates.push(el.textContent)
+        for (const c of candidates){
+          const p = parsePriceText(c)
+          if (p) return { raw: c, amount: p.amount, currency: p.currency }
+        }
+      }
+    }
+
+    // 4) Generic class/id heuristics: prefer visible nodes and the first match
+    // run a query and inspect candidates
+    let candidates = []
+    try{
+      const els = document.querySelectorAll("[class*='price'], [id*='price'], .product-price, .price, [class*='amount'], [data-test*='price']")
+      for (const el of els){
+        // skip script/style and hidden
+        try{
+          const rect = el.getBoundingClientRect()
+          if (rect.width === 0 && rect.height === 0) continue
+        }catch(e){/* ignore */}
+        const txt = (el.dataset && (el.dataset.price || el.dataset.priceAmount)) || el.getAttribute('content') || el.textContent
+        if (txt) candidates.push(String(txt).trim())
+      }
+    }catch(e){/* ignore selection errors */}
+
+    // 5) Fallback: full page search for currency patterns
+    if (candidates.length === 0){
+      const bodyText = document.body ? document.body.innerText : ''
+      const re = /([€$£¥₹₩฿]\s?[0-9][0-9.,\s]*)/g
+      const m = re.exec(bodyText)
+      if (m) candidates.push(m[0])
+    }
+
+    // parse candidates and return first valid one
+    for (const c of candidates){
+      const p = parsePriceText(c)
+      if (p) return { raw: c, amount: p.amount, currency: p.currency }
+    }
+
     return null
   }
 
   function findSKU(){
     const json = findJSONLDProduct()
     if (json && json.sku) return json.sku
+    // If JSON-LD ProductGroup with variants, try to read variant SKU from offers
+    if (json && json.hasVariant && Array.isArray(json.hasVariant)){
+      for (const variant of json.hasVariant){
+        if (!variant) continue
+        const off = variant.offers || (variant['offers'] && (Array.isArray(variant.offers) ? variant.offers[0] : variant.offers))
+        if (off && (off.sku || off.sku === 0)) return off.sku
+        if (variant.sku) return variant.sku
+      }
+    }
     const el = document.querySelector("[itemprop='sku'], .sku, [class*='sku']")
     if (el) return el.textContent.trim()
     return null

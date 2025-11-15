@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './styles.css'
 import logoUrl from '../public/logo.png'
+import Assistant from './Assistant'
 
 function Ecoscore({ value = 78 }) {
   // value should be 0-100
@@ -70,12 +71,15 @@ function DashboardApp({ product = null, detecting = false, onRetry = () => {} })
     <div className="dashboard-root">
       <div className="dashboard-container">
         <div className="dashboard-card">
-          <button className={"refresh-icon" + (detecting ? ' spinning' : '')} onClick={() => onRetry()} aria-label="Refresh detection" title="Refresh detection" disabled={detecting}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M21 12a9 9 0 10-2.47 6.03" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M21 3v6h-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <div style={{position:'absolute',top:12,right:12,display:'flex',gap:8,alignItems:'center'}}>
+            <button className={"refresh-icon" + (detecting ? ' spinning' : '')} onClick={() => onRetry()} aria-label="Refresh detection" title="Refresh detection" disabled={detecting}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M21 12a9 9 0 10-2.47 6.03" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 3v6h-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
           {detecting ? (
             <header className="dashboard-header">
               <div style={{width:'100%',textAlign:'center',padding:24}}>
