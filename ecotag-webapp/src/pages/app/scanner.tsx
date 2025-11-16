@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 // NOTE: This component assumes you have installed the necessary library:
 // npm install @zxing/library
 import { BrowserMultiFormatReader, DecodeHintType } from '@zxing/library';
+import { useRouter } from 'next/router';
 
 // --- Main Scanner Component ---
 
 const ScannerPage: React.FC = () => {
+    const router = useRouter();
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isScanning, setIsScanning] = useState(false);
     const [barcodeResult, setBarcodeResult] = useState<{ code: string; type: string } | null>(null);
@@ -61,6 +64,7 @@ const ScannerPage: React.FC = () => {
                                 code: result.getText(),
                                 type: result.getBarcodeFormat().toString(),
                             });
+                            router.push("/app/product/" + result.getText());
                         }
                         // Error handling: Ignore constant "No barcode found" errors
                         // if (error && !(error instanceof NotFoundException)) {

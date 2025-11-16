@@ -15,6 +15,7 @@ export interface IProduct extends Document {
     size: string;
     description: string;
     images: string[],
+    storeLink: string;
     materials: string;
     co2FootprintKgPerItem: string;
     recyclingAbilityScore: number;

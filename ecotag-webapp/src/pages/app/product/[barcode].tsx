@@ -1,50 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
+import type { GetServerSideProps } from 'next';
+import { IProduct } from '../../../types/Product';
 
-// Define the expected structure of the product data from our API route
-interface ProductData {
-    title: string;
-    barcodeId: string;
-    summary: string;
-    price: string;
-    features: string[];
-    searchSource: string;
-}
+type PageProps = {
+    product?: IProduct | null;
+    error?: string | null;
+    barcode: string;
+};
 
-const ProductDetailsPage: React.FC = () => {
+const ProductDetailsPage: React.FC<PageProps> = ({ product, error, barcode }) => {
     const router = useRouter();
-    const { barcode } = router.query as { barcode?: string };
-    const [product, setProduct] = useState<ProductData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!barcode) return; // Wait until router has populated the query
-
-        const fetchProductData = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                // Call our new API route, passing the barcode as a query parameter
-                //const response = await fetch(`/api/product-data?barcode=${barcode}`);
-                //const data = await response.json();
-
-                //if (!response.ok) {
-                //    throw new Error(data.message || 'Failed to retrieve product data.');
-                //}
-
-                setProduct({} as ProductData);
-            } catch (err: any) {
-                console.error("Fetch Error:", err);
-                setError(`Could not load data for barcode ${barcode}. ${err.message}`);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProductData();
-    }, [barcode]);
 
     // --- Loading States and Error Handling ---
 
@@ -52,18 +18,6 @@ const ProductDetailsPage: React.FC = () => {
         return (
             <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
                 <p className="text-xl text-gray-500">No barcode provided in URL.</p>
-            </div>
-        );
-    }
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-                <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-xl text-gray-600">Looking up product for barcode: {barcode}...</p>
             </div>
         );
     }
@@ -86,7 +40,13 @@ const ProductDetailsPage: React.FC = () => {
     }
 
     // --- Main Render (Product Display) ---
-    if (!product) return null;
+    if (!product) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+                <p className="text-lg text-gray-600">No product data found for barcode: {barcode}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 font-inter p-4 sm:p-8">
@@ -94,26 +54,44 @@ const ProductDetailsPage: React.FC = () => {
 
                 {/* Header Section */}
                 <div className="p-6 sm:p-8 bg-indigo-600 text-white">
-                    <h1 className="text-4xl font-extrabold mb-1">{product.title}</h1>
-                    <p className="text-indigo-200 text-sm font-medium">Barcode ID: {product.barcodeId}</p>
+                    <div className="flex items-start gap-6">
+                        <div className="flex-1">
+                            <h1 className="text-4xl font-extrabold mb-1">{product.title}</h1>
+                            <p className="text-indigo-200 text-sm font-medium">Barcode ID: {product.barcode_number}</p>
+                        </div>
+                        <div className="w-28 h-28 rounded-lg overflow-hidden bg-white/10 shrink-0">
+                            {product.images && product.images.length > 0 ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={product.images[0]} alt={product.title || 'product image'} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm text-white/80">No image</div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                    {/* Column 1: Summary and Price */}
+                    {/* Column 1: Image, Ecoscore and Summary */}
                     <div className="lg:col-span-1 space-y-6">
-                        <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-                            <p className="text-3xl font-bold text-green-700 mb-1">{product.price}</p>
-                            <p className="text-sm text-green-600 font-semibold">Estimated Market Price</p>
+                        <div className="p-4 bg-white rounded-xl border border-gray-200">
+                            <h3 className="text-sm text-gray-500 font-semibold">Overall EcoScore</h3>
+                            <p className="text-4xl font-extrabold text-green-700 mt-2">{product.ecoscore ?? '—'}</p>
+                            <div className="mt-3 text-sm text-gray-600 space-y-1">
+                                <div>Recycling Ability: <strong>{product.recyclingAbilityScore ?? '—'}</strong></div>
+                                <div>Lifecycle Score: <strong>{product.lifecycleScore ?? '—'}</strong></div>
+                                <div>CO₂ Footprint (kg/item): <strong>{product.co2FootprintKgPerItem ?? '—'}</strong></div>
+                            </div>
                         </div>
 
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-2">Product Summary</h2>
-                            <p className="text-gray-600 text-sm">{product.summary}</p>
+                            <h2 className="text-lg font-semibold text-gray-800 mb-2">Description</h2>
+                            <p className="text-gray-600 text-sm whitespace-pre-line">{product.description}</p>
                         </div>
 
                         <div className="text-xs text-gray-500 p-2 border-t border-gray-100">
-                            Data Grounded by: {product.searchSource}
+                            Data Grounded by: {/* if available, show a source */}
+                            {" "}{(product as any).searchSource ?? 'unknown'}
                         </div>
 
                         <button
@@ -145,3 +123,38 @@ const ProductDetailsPage: React.FC = () => {
 };
 
 export default ProductDetailsPage;
+
+export const getServerSideProps: GetServerSideProps<PageProps> = async (context) => {
+    const rawParam = context.params?.barcode;
+    const barcode = Array.isArray(rawParam) ? rawParam[0] : rawParam;
+
+    if (!barcode) {
+        return { notFound: true };
+    }
+
+    // Build absolute URL to internal API. Prefer NEXT_PUBLIC_SITE_URL if configured.
+    const host = context.req.headers.host;
+    const forwardedProto = context.req.headers['x-forwarded-proto'] as string | undefined;
+    const proto = forwardedProto ? forwardedProto.split(',')[0] : 'http';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (host ? `${proto}://${host}` : '');
+
+    const apiUrl = `${baseUrl}/api/scanned-barcode?barcode=${encodeURIComponent(String(barcode))}`;
+
+    try {
+        const r = await fetch(apiUrl);
+        const data = await r.json().catch(() => null);
+
+        if (!r.ok) {
+            return { props: { product: null, error: data?.message || `Upstream returned ${r.status}`, barcode: String(barcode) } };
+        }
+
+        // If the API returns an object with a `product` key, use it; otherwise use the whole body.
+        const product = data?.product ?? data ?? null;
+
+        console.log("Fetched product data:", product);
+
+        return { props: { product, error: null, barcode: String(barcode) } };
+    } catch (err: any) {
+        return { props: { product: null, error: String(err?.message ?? err), barcode: String(barcode) } };
+    }
+};

@@ -19,6 +19,7 @@ const ProductSchema: Schema<IProduct> = new Schema<IProduct>({
     description: String,
     images: [String],
     materials: String,
+    storeLink: String,
     co2FootprintKgPerItem: String,
     recyclingAbilityScore: Number,
     lifecycleScore: Number,
